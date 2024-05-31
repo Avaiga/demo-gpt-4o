@@ -22,16 +22,17 @@ messages_dict = {}
 
 def on_init(state):
     state.conv.update_content(state, "")
-    with state:
-        state.messages_dict = {}
-        state.messages = [
-            {
-                "role": "assistant",
-                "style": "assistant_message",
-                "content": "Hi, I'm GPT-4o! How can I help you today?",
-            },
-        ]
-        state.conv.update_content(state, create_conv(state))
+    state.messages_dict = {}
+    state.messages = [
+        {
+            "role": "assistant",
+            "style": "assistant_message",
+            "content": "Hi, I'm GPT-4o! How can I help you today?",
+        },
+    ]
+    state.gpt_messages = []
+    new_conv = create_conv(state)
+    state.conv.update_content(state, new_conv)
 
 
 def create_conv(state):
@@ -41,7 +42,7 @@ def create_conv(state):
             text = message["content"].replace("<br>", "\n").replace('"', "'")
             messages_dict[f"message_{i}"] = text
             tgb.text(
-                "{messages_dict['" + f"message_{i}" + "']}",
+                "{messages_dict['" + f"message_{i}" + "'] if messages_dict else ''}",
                 class_name=f"message_base {message['style']}",
                 mode="md",
             )
@@ -183,4 +184,4 @@ with tgb.Page() as page:
 if __name__ == "__main__":
     gui = Gui(page)
     conv = gui.add_partial("")
-    gui.run(title="🤖Taipy x GPT-4o", dark_mode=False, margin="0px")
+    gui.run(title="🤖Taipy x GPT-4o", dark_mode=False, margin="0px", debug=True)
