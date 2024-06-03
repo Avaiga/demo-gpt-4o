@@ -132,12 +132,19 @@ def send_message(state):
 
 
 def upload_image(state):
-    global index
-    image = Image.open(state.query_image_path)
-    image.thumbnail((300, 300))
-    image.save(f"images/example_{index}.png")
-    state.query_image_path = f"images/example_{index}.png"
-    index = index + 1
+    try:
+        global index
+        image = Image.open(state.query_image_path)
+        image.thumbnail((300, 300))
+        image.save(f"images/example_{index}.png")
+        state.query_image_path = f"images/example_{index}.png"
+        index = index + 1
+    except:
+        notify(
+            state,
+            "error",
+            f"Please make sure your image is under 1MB",
+        )
 
 
 def reset_chat(state):
@@ -180,6 +187,7 @@ with tgb.Page() as page:
                     extensions=".jpg,.jpeg,.png",
                     label="Upload an image",
                 )
+                tgb.text("Max file size: 1MB")
 
 if __name__ == "__main__":
     gui = Gui(page)
