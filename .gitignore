@@ -131,3 +131,6 @@ dmypy.json
 # Common
 temp.py
 tmp
+
+# VSCode
+.vscode/

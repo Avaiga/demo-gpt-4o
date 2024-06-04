@@ -1,19 +1,53 @@
 import os
 import base64
-import requests
 from dotenv import load_dotenv
 
 from taipy.gui import Gui, notify
 import taipy.gui.builder as tgb
 
-from PIL import Image
+import pandas as pd
+
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.chains.question_answering import load_qa_chain
+from langchain_community.document_loaders import TextLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.llms import HuggingFaceEndpoint
+from langchain_community.vectorstores import FAISS
+from langchain_community.document_loaders import UnstructuredPDFLoader
+from langchain.indexes import VectorstoreIndexCreator
+from langchain.chains import RetrievalQA
 
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+
+PDF_FOLDER_PATH = "./pdfs"
+pdf_names = os.listdir(PDF_FOLDER_PATH)
+pdf_names = pd.DataFrame(pdf_names, columns=["Uploaded PDFs"])
+
+loaders = [
+    UnstructuredPDFLoader(os.path.join(PDF_FOLDER_PATH, fn))
+    for fn in os.listdir(PDF_FOLDER_PATH)
+]
+
+index = VectorstoreIndexCreator(
+    embedding=HuggingFaceEmbeddings(),
+    text_splitter=CharacterTextSplitter(chunk_size=1000, chunk_overlap=0),
+).from_loaders(loaders)
+
+llm = HuggingFaceEndpoint(
+    repo_id="mistralai/Mistral-7B-Instruct-v0.2", temperature=0.1, max_length=512
+)
+
+
+chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=index.vectorstore.as_retriever(),
+    input_key="question",
+)
 
 index = 0
-query_image_path = ""
 query_message = ""
 messages = []
 gpt_messages = []
@@ -27,7 +61,7 @@ def on_init(state):
         {
             "role": "assistant",
             "style": "assistant_message",
-            "content": "Hi, I'm GPT-4o! How can I help you today?",
+            "content": "Hi, I am your RAG assistant! How can I help you today?",
         },
     ]
     state.gpt_messages = []
@@ -56,67 +90,26 @@ def encode_image(image_path):
 
 
 def query_gpt4o(state):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
+    message = {
+        "role": "user",
+        "content": [{"type": "text", "text": f"{state.query_message}"}],
     }
-
-    if state.query_image_path != "":
-        base64_image = encode_image(state.query_image_path)
-        message = {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": f"{state.query_message}"},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
-                },
-            ],
-        }
-    else:
-        message = {
-            "role": "user",
-            "content": [{"type": "text", "text": f"{state.query_message}"}],
-        }
 
     state.gpt_messages.append(message)
 
-    payload = {
-        "model": "gpt-4o",
-        "messages": state.gpt_messages,
-        "max_tokens": 300,
-    }
-
-    response = requests.post(
-        "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
-    )
-
-    return (
-        response.json()
-        .get("choices")[0]
-        .get("message")
-        .get("content")
-        .replace("\n\n", "\n")
-    )
+    return chain.run(state.query_message)
 
 
 def send_message(state):
-    if state.query_image_path == "":
-        state.messages.append(
-            {
-                "role": "user",
-                "style": "user_message",
-                "content": state.query_message,
-            }
-        )
-    else:
-        state.messages.append(
-            {
-                "role": "user",
-                "style": "user_message",
-                "content": f"{state.query_message}\n![user_image]({state.query_image_path})",
-            }
-        )
+
+    state.messages.append(
+        {
+            "role": "user",
+            "style": "user_message",
+            "content": state.query_message,
+        }
+    )
+
     state.conv.update_content(state, create_conv(state))
     notify(state, "info", "Sending message...")
     state.messages.append(
@@ -128,48 +121,27 @@ def send_message(state):
     )
     state.conv.update_content(state, create_conv(state))
     state.query_message = ""
-    state.query_image_path = ""
-
-
-def upload_image(state):
-    try:
-        global index
-        image = Image.open(state.query_image_path)
-        image.thumbnail((300, 300))
-        image.save(f"images/example_{index}.png")
-        state.query_image_path = f"images/example_{index}.png"
-        index = index + 1
-    except:
-        notify(
-            state,
-            "error",
-            f"Please make sure your image is under 1MB",
-        )
 
 
 def reset_chat(state):
     state.messages = []
     state.gpt_messages = []
     state.query_message = ""
-    state.query_image_path = ""
     state.conv.update_content(state, create_conv(state))
     on_init(state)
 
 
 with tgb.Page() as page:
-    with tgb.layout(columns="300px 1"):
+    with tgb.layout(columns="350px 1"):
         with tgb.part(class_name="sidebar"):
-            tgb.text("## Taipy x GPT-4o", mode="md")
+            tgb.text("## Taipy RAG", mode="md")
             tgb.button(
                 "New Conversation",
                 class_name="fullwidth plain",
                 id="reset_app_button",
                 on_action=reset_chat,
             )
-            tgb.html("br")
-            tgb.image(
-                content="{query_image_path}", width="250px", class_name="image_preview"
-            )
+            tgb.table("{pdf_names}", show_all=True)
 
         with tgb.part(class_name="p1"):
             tgb.part(partial="{conv}", height="600px", class_name="card card_chat")
@@ -181,15 +153,8 @@ with tgb.Page() as page:
                     label="Write your message:",
                     class_name="fullwidth",
                 )
-                tgb.file_selector(
-                    content="{query_image_path}",
-                    on_action=upload_image,
-                    extensions=".jpg,.jpeg,.png",
-                    label="Upload an image",
-                )
-                tgb.text("Max file size: 1MB")
 
 if __name__ == "__main__":
     gui = Gui(page)
     conv = gui.add_partial("")
-    gui.run(title="🤖Taipy x GPT-4o", dark_mode=False, margin="0px", debug=True)
+    gui.run(title="Taipy RAG", dark_mode=False, margin="0px", debug=True)
