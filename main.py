@@ -117,4 +117,4 @@ with tgb.Page() as page:
 if __name__ == "__main__":
     gui = Gui(page)
     conv = gui.add_partial("")
-    gui.run(title="Taipy RAG", dark_mode=False, margin="0px", debug=True, run_browser=False)
+    gui.run(title="Taipy RAG", dark_mode=False, margin="0px", debug=True)
