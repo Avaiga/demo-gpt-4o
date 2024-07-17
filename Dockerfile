@@ -5,7 +5,6 @@ EXPOSE 5000/tcp
 WORKDIR /app
 
 
-COPY packages.txt ./
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libtesseract-dev \
