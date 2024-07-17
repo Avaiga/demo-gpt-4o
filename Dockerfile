@@ -6,9 +6,12 @@ WORKDIR /app
 
 
 COPY packages.txt ./
-RUN apt update -y  &&  apt upgrade -y
-RUN xargs apt install -y < packages.txt
-
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    libtesseract-dev \
+    libpoppler-dev \
+    poppler-utils \
+    libgl1
 COPY requirements-docker.txt ./requirements.txt
 RUN pip install --upgrade pip
 RUN pip install --no-deps --no-cache-dir -r requirements.txt
