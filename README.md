@@ -12,53 +12,31 @@ This particular app uses Langchain, Huggingface and Mistral but it can be easily
 
 **You need a HuggingFace account with an active <a href="https://huggingface.co/settings/tokens" target="_blank">API key</a>**
 
-1. Clone this repo:
+This application uses some system dependencies like *tesseract* and *poppler*. To simplify development and deployment,
+consider using Docker Compose:
 
-```bash	
-git clone https://github.com/Avaiga/demo-gpt-4o.git
-```
-
-2. Switch to the rag branch:
+Step 1: Clone the `rag` branch of the Git repository.
 
 ```bash
-git checkout rag
+git clone -b rag --single-branch https://github.com/Avaiga/demo-gpt-4o.git
 ```
 
-3. Install dependencies:
+Step 2: Change directory to the cloned folder.
 
 ```bash
-pip install -r requirements.txt
+cd demo-gpt-4o
 ```
 
-4. `libmagic` returns an error with these dependencies. To fix it, run the following commands:
+Step 3: Create a .env file in the root directory with the following content.
 
-```bash
-pip uninstall python-magic
-pip install python-magic-bin==0.4.14
-```
-
-5. Install poppler:
-
-For Windows (look online for other OS):
-- Download the latest version of poppler from [here](https://github.com/oschwartz10612/poppler-windows/releases/).
-- Unzip it and add the bin folder to your PATH.
-
-6. Install tesseract:
-
-For Windows (look online for other OS):
-- Download the latest version of tesseract from [here](https://github.com/UB-Mannheim/tesseract/wiki).
-- Install it and add the `C:\Program Files\Tesseract-OCR` folder to your PATH.
-
-7. Create a `.env` file in the root directory with the following content:
-
-```bash
+```toml
 HUGGINGFACEHUB_API_TOKEN=[YOUR_ACCESS_TOKEN]
 ```
 
-8. Add your pdf files to the `pdfs` directory.
+Step 4 (Optional): Add your pdf files to the `pdfs` directory.
 
-9. Run the app and ask questions about the content of the pdfs:
+Step 5: Build and run the application with Docker.
 
 ```bash
-python main.py
+docker compose up
 ```
