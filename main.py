@@ -12,13 +12,6 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-index = 0
-query_image_path = ""
-query_message = ""
-messages = []
-gpt_messages = []
-messages_dict = {}
-
 
 def on_init(state):
     state.conv.update_content(state, "")
@@ -156,40 +149,46 @@ def reset_chat(state):
     on_init(state)
 
 
-with tgb.Page() as page:
-    with tgb.layout(columns="300px 1"):
-        with tgb.part(class_name="sidebar"):
-            tgb.text("## Taipy x GPT-4o", mode="md")
-            tgb.button(
-                "New Conversation",
-                class_name="fullwidth plain",
-                id="reset_app_button",
-                on_action=reset_chat,
-            )
-            tgb.html("br")
-            tgb.image(
-                content="{query_image_path}", width="250px", class_name="image_preview"
-            )
-
-        with tgb.part(class_name="p1"):
-            tgb.part(partial="{conv}", height="600px", class_name="card card_chat")
-            with tgb.part("card mt1"):
-                tgb.input(
-                    "{query_message}",
-                    on_action=send_message,
-                    change_delay=-1,
-                    label="Write your message:",
-                    class_name="fullwidth",
-                )
-                tgb.file_selector(
-                    content="{query_image_path}",
-                    on_action=upload_image,
-                    extensions=".jpg,.jpeg,.png",
-                    label="Upload an image",
-                )
-                tgb.text("Max file size: 1MB")
-
 if __name__ == "__main__":
+    index = 0
+    query_image_path = ""
+    query_message = ""
+    messages = []
+    gpt_messages = []
+    messages_dict = {}
+
+    with tgb.Page() as page:
+        with tgb.layout(columns="300px 1"):
+            with tgb.part(class_name="sidebar"):
+                tgb.text("## Taipy x GPT-4o", mode="md")
+                tgb.button(
+                    "New Conversation",
+                    class_name="fullwidth plain",
+                    id="reset_app_button",
+                    on_action=reset_chat,
+                )
+                tgb.html("br")
+                tgb.image(
+                    content="{query_image_path}", width="250px", class_name="image_preview"
+                )
+
+            with tgb.part(class_name="p1"):
+                tgb.part(partial="{conv}", height="600px", class_name="card card_chat")
+                with tgb.part("card mt1"):
+                    tgb.input(
+                        "{query_message}",
+                        on_action=send_message,
+                        change_delay=-1,
+                        label="Write your message:",
+                        class_name="fullwidth",
+                    )
+                    tgb.file_selector(
+                        content="{query_image_path}",
+                        on_action=upload_image,
+                        extensions=".jpg,.jpeg,.png",
+                        label="Upload an image",
+                    )
+                    tgb.text("Max file size: 1MB")
     gui = Gui(page)
     conv = gui.add_partial("")
     gui.run(title="🤖Taipy x GPT-4o", dark_mode=False, margin="0px", debug=True)
