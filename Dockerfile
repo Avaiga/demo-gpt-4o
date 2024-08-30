@@ -21,6 +21,5 @@ RUN pip install -r requirements.txt
 COPY images /app/images
 COPY main.css .
 COPY main.py .
-COPY .env .
 
 CMD ["taipy", "run", "--no-debug", "--no-reloader", "main.py", "-H", "0.0.0.0", "-P", "5000"]
